@@ -1,0 +1,82 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+#define CACHE_SIZE 32
+#define LINE_SIZE 4
+
+struct cache_line {
+    int tag;
+    int valid;
+    int data[LINE_SIZE];
+};
+
+struct cache {
+    struct cache_line lines[CACHE_SIZE];
+    int num_hits;
+    int num_accesses;
+};
+
+void init_cache(struct cache *c) {
+    int i, j;
+    for (i = 0; i < CACHE_SIZE; i++) {
+        c->lines[i].tag = -1;
+        c->lines[i].valid = 0;
+        for (j = 0; j < LINE_SIZE; j++) {
+            c->lines[i].data[j] = 0;
+        }
+    }
+    c->num_hits = 0;
+    c->num_accesses = 0;
+}
+
+int cache_lookup_direct(struct cache *c, int address) {
+    int line_index = (address / LINE_SIZE) % CACHE_SIZE;
+    int tag = address / (CACHE_SIZE * LINE_SIZE);
+    if (c->lines[line_index].valid && c->lines[line_index].tag == tag) {
+        c->num_hits++;
+        return c->lines[line_index].data[address % LINE_SIZE];
+    } else {
+        c->lines[line_index].tag = tag;
+        c->lines[line_index].valid = 1;
+        int i;
+        for (i = 0; i < LINE_SIZE; i++) {
+            c->lines[line_index].data[i] = rand() % 256;
+        }
+        c->num_accesses++;
+        return c->lines[line_index].data[address % LINE_SIZE];
+    }
+}
+
+int cache_lookup_2way(struct cache *c, int address) {
+    int line_index = ((address / LINE_SIZE) % (CACHE_SIZE / 2)) * 2;
+    int tag = address / (CACHE_SIZE * LINE_SIZE / 2);
+    if (c->lines[line_index].valid && c->lines[line_index].tag == tag) {
+        c->num_hits++;
+        return c->lines[line_index].data[address % LINE_SIZE];
+    } else if (c->lines[line_index+1].valid && c->lines[line_index+1].tag == tag) {
+        c->num_hits++;
+        return c->lines[line_index+1].data[address % LINE_SIZE];
+    } else {
+        if (rand() % 2 == 0) {
+            c->lines[line_index].tag = tag;
+            c->lines[line_index].valid = 1;
+            int i;
+            for (i = 0; i < LINE_SIZE; i++) {
+                c->lines[line_index].data[i] = rand() % 256;
+            }
+            c->num_accesses++;
+            return c->lines[line_index].data[address % LINE_SIZE];
+        } else {
+            c->lines[line_index+1].tag = tag;
+            c->lines[line_index+1].valid = 1;
+            int i;
+            for (i = 0; i < LINE_SIZE; i++) {
+                c->lines[line_index+1].data[i] = rand() % 256;
+            }
+            c->num_accesses++;
+            return c->lines[line_index+1].data[address % LINE_SIZE];
+        }
+    }
+}
+
+int cache_lookup_4
